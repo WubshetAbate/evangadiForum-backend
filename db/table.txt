@@ -1,0 +1,46 @@
+
+USE `evangadi-db`;
+
+-- Create users table
+CREATE TABLE IF NOT EXISTS users (
+  userid VARCHAR(100) PRIMARY KEY,
+  username VARCHAR(50) UNIQUE NOT NULL,
+  firstname VARCHAR(50) NOT NULL,
+  lastname VARCHAR(50) NOT NULL,
+  email VARCHAR(100) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create questions table
+CREATE TABLE IF NOT EXISTS questions (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  questionid VARCHAR(100) UNIQUE NOT NULL,
+  userid VARCHAR(100) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT NOT NULL,
+  tag VARCHAR(50),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (userid) REFERENCES users(userid)
+);
+
+-- Create answers table
+CREATE TABLE IF NOT EXISTS answers (
+  answerid INT AUTO_INCREMENT PRIMARY KEY,
+  userid VARCHAR(100) NOT NULL,
+  questionid VARCHAR(100) NOT NULL,
+  answer TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (userid) REFERENCES users(userid),
+  FOREIGN KEY (questionid) REFERENCES questions(questionid)
+);
+
+-- Create password_resets table for forgot password functionality
+CREATE TABLE IF NOT EXISTS password_resets (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  email VARCHAR(100) NOT NULL,
+  otp VARCHAR(6) NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY unique_email (email)
+);
