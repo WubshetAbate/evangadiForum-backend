@@ -25,7 +25,8 @@
     "http-status-codes": "^2.3.0",
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.15.1",
-    "nodemailer": "^7.0.9"
+    "nodemailer": "^7.0.9",
+    "sql.js": "^1.13.0"
   },
   "engines": {
     "node": ">=18.0.0"
