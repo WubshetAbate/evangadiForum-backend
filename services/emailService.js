@@ -37,13 +37,12 @@ const sendOTPEmail = async (email, otp) => {
     `,
   };
 
-  return await transporter
-    .sendMail(mailOptions)
-    .then((info) => {
+  return await transporter.sendMail(mailOptions)
+    .then(info => {
       console.log("✅ OTP email sent:", info.messageId);
       return { success: true, messageId: info.messageId };
     })
-    .catch((error) => {
+    .catch(error => {
       console.error("❌ OTP email failed:", error.message);
       return { success: false, error: error.message };
     });
@@ -63,13 +62,12 @@ const sendPasswordResetSuccessEmail = async (email) => {
     `,
   };
 
-  return await transporter
-    .sendMail(mailOptions)
-    .then((info) => {
+  return await transporter.sendMail(mailOptions)
+    .then(info => {
       console.log("✅ Password reset success email sent:", info.messageId);
       return { success: true, messageId: info.messageId };
     })
-    .catch((error) => {
+    .catch(error => {
       console.error("❌ Password reset success email failed:", error.message);
       return { success: false, error: error.message };
     });
@@ -78,11 +76,8 @@ const sendPasswordResetSuccessEmail = async (email) => {
 // ---------- Generate OTP & Save to DB ----------
 const generateAndSendOTP = async (email) => {
   // Check if user exists
-  const [users] = await db.query("SELECT id FROM users WHERE email = ?", [
-    email,
-  ]);
-  if (!users.length)
-    return { success: false, message: "No account with this email." };
+  const [users] = await db.query("SELECT id FROM users WHERE email = ?", [email]);
+  if (!users.length) return { success: false, message: "No account with this email." };
 
   const userId = users[0].id;
   const otp = Math.floor(100000 + Math.random() * 900000); // 6-digit OTP
@@ -100,11 +95,8 @@ const generateAndSendOTP = async (email) => {
 
 // ---------- Verify OTP & Reset Password ----------
 const verifyOTPAndResetPassword = async (email, otp, newPassword) => {
-  const [users] = await db.query("SELECT id FROM users WHERE email = ?", [
-    email,
-  ]);
-  if (!users.length)
-    return { success: false, message: "No account with this email." };
+  const [users] = await db.query("SELECT id FROM users WHERE email = ?", [email]);
+  if (!users.length) return { success: false, message: "No account with this email." };
 
   const userId = users[0].id;
 
@@ -116,14 +108,10 @@ const verifyOTPAndResetPassword = async (email, otp, newPassword) => {
   if (!records.length) return { success: false, message: "Invalid OTP." };
 
   const record = records[0];
-  if (new Date(record.expires_at) < new Date())
-    return { success: false, message: "OTP expired." };
+  if (new Date(record.expires_at) < new Date()) return { success: false, message: "OTP expired." };
 
   const hashedPassword = await bcrypt.hash(newPassword, 10);
-  await db.query("UPDATE users SET password = ? WHERE id = ?", [
-    hashedPassword,
-    userId,
-  ]);
+  await db.query("UPDATE users SET password = ? WHERE id = ?", [hashedPassword, userId]);
 
   // Delete used OTP
   await db.query("DELETE FROM password_resets WHERE id = ?", [record.id]);
