@@ -1,5 +1,5 @@
 
-USE `sql12804113`;
+USE `testdb`;
 
 -- Create users table
 CREATE TABLE IF NOT EXISTS users (

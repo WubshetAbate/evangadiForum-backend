@@ -1,123 +1,142 @@
+// emailService.js
+require("dotenv").config();
 const nodemailer = require("nodemailer");
+const mysql = require("mysql2/promise");
+const bcrypt = require("bcrypt");
 
-// Create email transporter
-const createTransporter = () => {
-  return nodemailer.createTransport({
-    service: "gmail", // You can change this to other services like 'outlook', 'yahoo', etc.
-    auth: {
-      user: process.env.EMAIL_USER, // Your email address
-      pass: process.env.EMAIL_PASSWORD, // Your email password or app password
-    },
-  });
-};
+// Create transporter
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD, // Use App Password if Gmail 2FA enabled
+  },
+});
 
-// Send OTP email
+// Create MySQL pool
+const db = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+});
+
+// ------------------- Helper: Send OTP Email -------------------
 const sendOTPEmail = async (email, otp) => {
   try {
-    const transporter = createTransporter();
-
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: `"Evangadi Forum" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: "Evangadi Forum - Password Reset OTP",
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-            <h1 style="margin: 0; font-size: 28px;">Evangadi Forum</h1>
-            <p style="margin: 10px 0 0 0; opacity: 0.9;">Password Reset Request</p>
-          </div>
-          
-          <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-            <h2 style="color: #333; margin-top: 0;">Password Reset OTP</h2>
-            
-            <p style="color: #666; line-height: 1.6;">
-              You requested a password reset for your Evangadi Forum account. 
-              Use the following OTP to reset your password:
-            </p>
-            
-            <div style="background: #667eea; color: white; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
-              <h1 style="margin: 0; font-size: 36px; letter-spacing: 8px; font-weight: bold;">${otp}</h1>
-            </div>
-            
-            <p style="color: #666; line-height: 1.6;">
-              <strong>Important:</strong>
-            </p>
-            <ul style="color: #666; line-height: 1.6;">
-              <li>This OTP is valid for <strong>10 minutes</strong> only</li>
-              <li>Do not share this OTP with anyone</li>
-              <li>If you didn't request this password reset, please ignore this email</li>
-            </ul>
-            
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e9ecef;">
-              <p style="color: #999; font-size: 14px; margin: 0;">
-                This is an automated message from Evangadi Forum. Please do not reply to this email.
-              </p>
-            </div>
-          </div>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
+          <h2>Password Reset OTP</h2>
+          <p>Your OTP code is:</p>
+          <h1 style="color: #667eea;">${otp}</h1>
+          <p>This OTP will expire in 10 minutes. Do not share it with anyone.</p>
         </div>
       `,
     };
 
-    const result = await transporter.sendMail(mailOptions);
-    console.log("✅ Email sent successfully:", result.messageId);
-    return { success: true, messageId: result.messageId };
+    const info = await transporter.sendMail(mailOptions);
+    console.log("✅ OTP email sent:", info.messageId);
+    return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error("❌ Email sending failed:", error);
+    console.error("❌ OTP email failed:", error.message);
     return { success: false, error: error.message };
   }
 };
 
-// Send password reset success email
+// ------------------- Helper: Password Reset Success Email -------------------
 const sendPasswordResetSuccessEmail = async (email) => {
   try {
-    const transporter = createTransporter();
-
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: `"Evangadi Forum" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: "Evangadi Forum - Password Reset Successful",
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-            <h1 style="margin: 0; font-size: 28px;">✅ Password Reset Successful</h1>
-            <p style="margin: 10px 0 0 0; opacity: 0.9;">Your password has been changed</p>
-          </div>
-          
-          <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-            <h2 style="color: #333; margin-top: 0;">Password Successfully Reset</h2>
-            
-            <p style="color: #666; line-height: 1.6;">
-              Your password for your Evangadi Forum account has been successfully reset.
-            </p>
-            
-            <div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 8px; margin: 20px 0;">
-              <p style="margin: 0;"><strong>Security Notice:</strong> If you did not make this change, please contact our support team immediately.</p>
-            </div>
-            
-            <p style="color: #666; line-height: 1.6;">
-              You can now log in to your account using your new password.
-            </p>
-            
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e9ecef;">
-              <p style="color: #999; font-size: 14px; margin: 0;">
-                This is an automated message from Evangadi Forum. Please do not reply to this email.
-              </p>
-            </div>
-          </div>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
+          <h2>Password Reset Successful ✅</h2>
+          <p>Your password has been successfully reset. You can now login with your new password.</p>
         </div>
       `,
     };
 
-    const result = await transporter.sendMail(mailOptions);
-    console.log("✅ Password reset success email sent:", result.messageId);
-    return { success: true, messageId: result.messageId };
+    const info = await transporter.sendMail(mailOptions);
+    console.log("✅ Password reset success email sent:", info.messageId);
+    return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error("❌ Password reset success email failed:", error);
+    console.error("❌ Password reset success email failed:", error.message);
     return { success: false, error: error.message };
   }
+};
+
+// ------------------- Generate OTP & Save to DB -------------------
+const generateAndSendOTP = async (email) => {
+  // Check if user exists
+  const [users] = await db.query("SELECT id FROM users WHERE email = ?", [
+    email,
+  ]);
+  if (!users.length)
+    return { success: false, message: "No account with this email." };
+
+  const userId = users[0].id;
+  const otp = Math.floor(100000 + Math.random() * 900000); // 6-digit OTP
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+
+  // Save OTP in password_resets table
+  await db.query(
+    "INSERT INTO password_resets (user_id, otp, expires_at, attempts, created_at) VALUES (?, ?, ?, 0, NOW())",
+    [userId, otp, expiresAt]
+  );
+
+  // Send OTP email
+  return await sendOTPEmail(email, otp);
+};
+
+// ------------------- Verify OTP & Reset Password -------------------
+const verifyOTPAndResetPassword = async (email, otp, newPassword) => {
+  // Check if user exists
+  const [users] = await db.query("SELECT id FROM users WHERE email = ?", [
+    email,
+  ]);
+  if (!users.length)
+    return { success: false, message: "No account with this email." };
+
+  const userId = users[0].id;
+
+  // Get OTP record
+  const [records] = await db.query(
+    "SELECT * FROM password_resets WHERE user_id = ? AND otp = ? ORDER BY created_at DESC LIMIT 1",
+    [userId, otp]
+  );
+
+  if (!records.length) return { success: false, message: "Invalid OTP." };
+
+  const record = records[0];
+  const now = new Date();
+  if (new Date(record.expires_at) < now)
+    return { success: false, message: "OTP expired." };
+
+  // Hash new password
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  await db.query("UPDATE users SET password = ? WHERE id = ?", [
+    hashedPassword,
+    userId,
+  ]);
+
+  // Delete used OTP
+  await db.query("DELETE FROM password_resets WHERE id = ?", [record.id]);
+
+  // Send success email
+  await sendPasswordResetSuccessEmail(email);
+
+  return { success: true, message: "Password reset successfully." };
 };
 
 module.exports = {
   sendOTPEmail,
   sendPasswordResetSuccessEmail,
+  generateAndSendOTP,
+  verifyOTPAndResetPassword,
 };
