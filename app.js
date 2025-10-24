@@ -7,15 +7,15 @@ const app = express();
 const port = process.env.PORT || 5500;
 
 // Configure CORS properly
-const corsOptions = {
-  origin: [
-    "http://localhost:5173", // for local dev
-    "https://evangadi-forum-frontend-8gi4edis4-amans-projects-29839fac.vercel.app/login", // deployed frontend
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true,
-};
-app.use(cors(corsOptions));
+import cors from "cors";
+app.use(
+  cors({
+    origin: "https://evangadi-forum-frontend-omega.vercel.app",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
+  })
+);
+
 
 // Parse JSON before routes
 app.use(express.json());
