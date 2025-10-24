@@ -7,8 +7,9 @@ const app = express();
 
 // ✅ Allow frontend domains (Vercel + localhost)
 const allowedOrigins = [
-  "https://evangadi-forum-frontend-omega.vercel.app", // your Vercel frontend
-  "http://localhost:5173", // local dev
+  "https://evangadi-forum-frontend-uakk.vercel.app", // ✅ current Vercel deployment
+  "https://evangadi-forum-frontend-omega.vercel.app", // old Vercel deployment
+  "http://localhost:5173", // local development
 ];
 
 // ✅ Secure, dynamic CORS configuration
@@ -83,13 +84,28 @@ app.get("/api/projects", (req, res) => {
   ]);
 });
 
-// ✅ Forgot-password route example (the one throwing the error)
+// ✅ Forgot-password route example
 app.post("/api/users/forgot-password", (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: "Email is required" });
 
   console.log("Forgot password requested for:", email);
   res.json({ message: "Password reset email sent (mock response)" });
+});
+
+// ✅ Register route (to fix your registration CORS issue)
+app.post("/api/users/register", (req, res) => {
+  const { name, email, password } = req.body;
+  if (!name || !email || !password)
+    return res.status(400).json({ error: "All fields are required" });
+
+  console.log("Registration request for:", email);
+  res.json({ success: true, message: "User registered successfully (mock)" });
+});
+
+// ✅ Default route to confirm server is running
+app.get("/", (req, res) => {
+  res.send("✅ Backend is running successfully!");
 });
 
 // ✅ Start server
