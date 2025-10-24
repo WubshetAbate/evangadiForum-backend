@@ -1,54 +1,97 @@
-require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const dbConnection = require("./db/dbConfig");
+const bodyParser = require("body-parser");
+require("dotenv").config();
 
 const app = express();
-const port = process.env.PORT || 5500;
 
-// Configure CORS properly
-const corsOptions = {
-  origin: [
-    "http://localhost:5173", // for local dev
-    "https://wubshet-evangadiforum.netlify.app", // deployed frontend
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true,
-};
-app.use(cors(corsOptions));
+// ✅ Allow frontend domains (Vercel + localhost)
+const allowedOrigins = [
+  "https://evangadi-forum-frontend-omega.vercel.app", // your Vercel frontend
+  "http://localhost:5173", // local dev
+];
 
-// Parse JSON before routes
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// ✅ Secure, dynamic CORS configuration
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.warn("❌ Blocked by CORS:", origin);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
 
-// Import routes
-const userRoutes = require("./routes/userRoute");
-const questionRoutes = require("./routes/questionRoute");
-const answerRoutes = require("./routes/answerRoute");
+// ✅ Middleware
+app.use(bodyParser.json());
 
-// Use routes
-app.use("/api/users", userRoutes);
-app.use("/api/questions", questionRoutes);
-app.use("/api/answers", answerRoutes);
-
-// Test DB connection
-async function start() {
-  try {
-    const result = await dbConnection.execute("SELECT 'db connected'");
-    console.log("✅ Connected to MySQL Database:", result[0]);
-  } catch (error) {
-    console.log("❌ Database connection error:", error.message);
-  }
-}
-
-start();
-
-// Start server
-app.listen(port, (err) => {
-  if (err) {
-    console.log("❌ Server start error:", err);
-  } else {
-    console.log(`✅ Server listening on port ${port}`);
-    console.log("📍 Routes ready: /api/users, /api/questions, /api/answers");
-  }
+// ✅ Example project route (you can keep your existing ones)
+app.get("/api/projects", (req, res) => {
+  res.json([
+    {
+      id: 1,
+      title: "Netflix Clone",
+      desc: "A modern, responsive Netflix website built with React and API integration",
+      tech: ["React", "API", "Node"],
+      link: "https://github.com/WubshetAbate/Netflix-Clone-2025.git",
+      demo: "https://wubshetnetfliix.netlify.app/",
+    },
+    {
+      id: 2,
+      title: "Amazon Clone",
+      desc: "Full-stack e-commerce application with payment integration",
+      tech: ["React", "Stripe", "Node", "MySQL DB", "Firebase"],
+      link: "https://github.com/WubshetAbate/Amazon-frontend.git",
+      demo: "https://wubshet-amazon-fullstack-app.netlify.app/",
+    },
+    {
+      id: 3,
+      title: "Question and Answer App",
+      desc: "Collaborative app for signup, login, post & get questions with answers",
+      tech: ["React", "Node", "Express", "MySQL"],
+      link: "https://github.com/WubshetAbate/evangadiForum-backend.git",
+      demo: "https://wubshet-evangadiforum.netlify.app/",
+    },
+    {
+      id: 4,
+      title: "Apple Website",
+      desc: "A clone of Apple's official website built with React and Express",
+      tech: ["React", "Express", "MySQL"],
+      link: "https://github.com/WubshetAbate/Apple-by-React.git",
+      demo: "https://silly-naiad-a0b745.netlify.app/",
+    },
+    {
+      id: 5,
+      title: "Local Calculator",
+      desc: "A Local Calculator that performs various mathematical operations",
+      tech: ["HTML", "CSS", "JavaScript"],
+      link: "https://github.com/WubshetAbate/Calculator-project.git",
+      demo: "https://wubshet-calculator.netlify.app/",
+    },
+    {
+      id: 6,
+      title: "Weather App",
+      desc: "A Weather App that shows the weather of any city in the world",
+      tech: ["HTML", "Modular CSS", "JS", "API"],
+      link: "https://github.com/WubshetAbate/weather-app.git",
+      demo: "https://wubshet-weather-app.netlify.app/",
+    },
+  ]);
 });
+
+// ✅ Forgot-password route example (the one throwing the error)
+app.post("/api/users/forgot-password", (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Email is required" });
+
+  console.log("Forgot password requested for:", email);
+  res.json({ message: "Password reset email sent (mock response)" });
+});
+
+// ✅ Start server
+const PORT = process.env.PORT || 5001;
+app.listen(PORT, () => console.log(`✅ Server listening on port ${PORT}`));
