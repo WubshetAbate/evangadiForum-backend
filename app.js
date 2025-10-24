@@ -7,7 +7,6 @@ const app = express();
 const port = process.env.PORT || 5500;
 
 // Configure CORS properly
-import cors from "cors";
 app.use(
   cors({
     origin: "https://evangadi-forum-frontend-omega.vercel.app",
@@ -15,7 +14,6 @@ app.use(
     credentials: true,
   })
 );
-
 
 // Parse JSON before routes
 app.use(express.json());
